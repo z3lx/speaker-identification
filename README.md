@@ -25,15 +25,15 @@ HF_API_TOKEN=token_goes_here
 
 ## Usage
 
-The `identify.py` script can be run from the command line as such:
+The `identify.py` script can be run from the command line with the following arguments:
 
 ```bash
-python identify.py [-h] --enrollment-path ENROLLMENT_PATH --test-path TEST_PATH --save-path SAVE_PATH [--device DEVICE] [--hf-api-token HF_API_TOKEN]
+python identify.py [-h] --enrollment-dir ENROLLMENT_DIR --test-dir TEST_DIR --save-dir SAVE_DIR [--device DEVICE] [--hf-api-token HF_API_TOKEN]
 ```
 
-- `--enrollment-path`: Path to the directory containing the enrollment audio files.
-- `--test-path`: Path to the directory containing the test audio files.
-- `--save-path`: Path to the directory where embeddings and distances will be saved.
+- `--enrollment-dir`: Path to the directory containing the enrollment audio files.
+- `--test-dir`: Path to the directory containing the test audio files.
+- `--save-dir`: Path to the directory where embeddings and distances will be saved.
 - `--device`: (Optional) Device to use for inference. Defaults to "cuda" if available, else "cpu".
 - `--hf-api-token`: (Optional) Hugging Face API token for model authentication.
 
