@@ -81,14 +81,12 @@ def identify_speaker(
         audio_type = "enrollment" if audio_dir == enrollment_dir else "test"
 
         # Compute audio hashes
-        for file_name in os.listdir(audio_dir):
-            extensions = (".flac", ".mp3", ".ogg", ".wav")
-            if not file_name.endswith(extensions):
-                continue
-            audio_path = os.path.join(audio_dir, file_name)
-            with open(audio_path, "rb") as f:
-                audio_hash = hashlib.sha256(f.read()).digest()
-            audio_index[audio_path] = (None, audio_hash)
+        logger.info(f"Computing {audio_type} audio hashes")
+        audio_hashes = compute_hashes(audio_dir, show_tqdm)
+        audio_index.update({
+            audio_path: (None, audio_hash)
+            for audio_path, audio_hash in audio_hashes.items()
+        })
 
         # Check for cached embeddings
         if save_dir:
@@ -99,14 +97,8 @@ def identify_speaker(
                     audio_index[audio_path] = (audio_embedding, audio_hash)
 
         # Compute embeddings
-        compute_embeddings(
-            audio_index,
-            inference,
-            show_tqdm=show_tqdm,
-            tqdm_kwargs={
-                "desc": f"Computing {audio_type} embeddings"
-            }
-        )
+        logger.info(f"Computing {audio_type} embeddings")
+        compute_embeddings(audio_index, inference, show_tqdm)
 
         # Serialize embeddings
         if save_dir:
@@ -119,15 +111,8 @@ def identify_speaker(
             logger.info(f"Cached {audio_type} embeddings saved to {cached_embeddings_path}")
 
     # Compute distances
-    distances = compute_distances(
-        enrollment_index,
-        test_index,
-        show_tqdm=show_tqdm,
-        tqdm_kwargs={
-            "desc": "Computing distances"
-        }
-    )
-
+    logger.info("Computing distances")
+    distances = compute_distances(enrollment_index, test_index, show_tqdm)
     sorted_distances = sorted(
         distances.items(),
         key=lambda x: float("inf") if np.isnan(x[1]) else x[1]
@@ -141,6 +126,37 @@ def identify_speaker(
         logger.info(f"Distances saved to {distances_path}")
 
     return sorted_distances
+
+
+def compute_hashes(
+    audio_dir: str,
+    show_tqdm: bool = True,
+    tqdm_kwargs: Dict[str, Any] = None
+) -> Dict[str, bytes]:
+    """
+    Compute audio hashes for audio files in a given directory.
+
+    Parameters:
+        audio_dir (str): Path to the directory containing the audio files.
+        show_tqdm (bool, optional): Whether to show a tqdm progress bar.
+        tqdm_kwargs (Dict[str, Any], optional): Additional arguments for the tqdm progress bar.
+
+    Returns:
+        Dict[str, bytes]: Dictionary of audio hashes. Keys are audio file paths, values are audio hashes.
+    """
+    iterator = tqdm(os.listdir(audio_dir), **(tqdm_kwargs or {})) \
+        if show_tqdm else os.listdir(audio_dir)
+
+    hashes: Dict[str, bytes] = dict()
+    extensions = (".flac", ".mp3", ".ogg", ".wav")
+    for file_name in iterator:
+        if not file_name.endswith(extensions):
+            continue
+        audio_path = os.path.join(audio_dir, file_name)
+        with open(audio_path, "rb") as f:
+            audio_hash = hashlib.sha256(f.read()).digest()
+        hashes[audio_path] = audio_hash
+    return hashes
 
 
 def compute_embeddings(
