@@ -122,7 +122,7 @@ def identify_speaker(
     if save_dir:
         distances_path = os.path.join(save_dir, "distances.json")
         with open(distances_path, "w") as f:
-            json.dump(sorted_distances, f, indent=4)
+            json.dump([(k, None if np.isnan(v) else v) for k, v in sorted_distances], f, indent=4)
         logger.info(f"Distances saved to {distances_path}")
 
     return sorted_distances
@@ -226,7 +226,8 @@ def compute_distances(
         enrollment_embedding, _ = enrollment_data
         for test_path, test_data in test_index.items():
             test_embedding, _ = test_data
-            distance = cosine(enrollment_embedding.flatten(), test_embedding.flatten())
+            distance = cosine(enrollment_embedding.flatten(), test_embedding.flatten()) \
+                if enrollment_embedding is not None and test_embedding is not None else np.nan
             distances[test_path] = (distances.get(test_path) or 0) + distance
     distances = {k: v / len(enrollment_index) for k, v in distances.items()}
     return distances
